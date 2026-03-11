@@ -224,8 +224,10 @@ export default function Home() {
     if (bits > 64) {
       setShowOverflowParticles(true);
       particleFadeFrameRef.current = requestAnimationFrame(() => {
-        setOverflowParticlesVisible(true);
-        particleFadeFrameRef.current = null;
+        particleFadeFrameRef.current = requestAnimationFrame(() => {
+          setOverflowParticlesVisible(true);
+          particleFadeFrameRef.current = null;
+        });
       });
       return;
     }
