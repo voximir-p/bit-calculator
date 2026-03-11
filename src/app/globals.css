@@ -115,7 +115,7 @@ input[type="range"]:active::-moz-range-thumb {
 @keyframes overflow-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 rgba(251, 113, 133, 0);
+    box-shadow: 0 0 12px rgba(251, 113, 133, 0.3);
   }
   50% {
     box-shadow: 0 0 16px rgba(251, 113, 133, 0.5);
@@ -167,17 +167,17 @@ input[type="range"]:active::-moz-range-thumb {
     opacity: 0.85;
   }
   100% {
-    transform: translate(calc(-50% + var(--ember-shift, 0px)), calc(-1 * var(--ember-rise, 42px))) scale(0.2);
+    transform: translate(calc(-50% + var(--ember-shift, 0px)), calc(-0.6 * var(--ember-rise, 42px))) scale(0.2);
     opacity: 0;
   }
 }
 
 .animate-overflow-pulse {
-  animation: overflow-pulse 1.4s ease-in-out infinite;
+  animation: overflow-pulse 2s ease-in-out infinite;
 }
 
 .animate-warning-sweep {
-  animation: warning-sweep 1s ease-in-out infinite;
+  animation: warning-sweep 0.75s ease-in-out infinite;
 }
 
 .animate-burn-flicker {

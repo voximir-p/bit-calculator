@@ -177,7 +177,9 @@ export default function Home() {
               ? isSigned
                 ? "int64"
                 : "uint64"
-              : "64+ bits required";
+              : isSigned
+                ? "int64+"
+                : "uint64+"
 
     return {
       bits: effectiveBits,
@@ -365,7 +367,7 @@ export default function Home() {
           <StatCard
             label="Fits In"
             value={fitsInLabel}
-            sub={bits === 1 ? "logical value" : bits <= 64 ? (isSigned ? "signed integer type" : "unsigned integer type") : "requires arbitrary-precision integer"}
+            sub={bits === 1 ? "logical value data type" : bits <= 64 ? (isSigned ? "signed integer type" : "unsigned integer type") : "required to use bigint"}
           />
         </div>
 
