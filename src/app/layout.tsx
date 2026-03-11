@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://bitcalc.voximir.org"),
   title: "Bit Size Calculator",
   description: "Explore how many bits are needed to represent powers of 10",
   alternates: {

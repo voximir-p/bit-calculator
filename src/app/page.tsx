@@ -138,7 +138,7 @@ export default function Home() {
     snapFrameRef.current = requestAnimationFrame(animate);
   };
 
-  const { bits, baseBits, bitsLabel, fitsInLabel, valueLabel } = useMemo(() => {
+  const { bits, baseBits, bitsLabel, fitsInLabel, valueLabel, isCompactValue } = useMemo(() => {
     const nVal = 10n ** BigInt(exponent);
     const unsignedBits = bitsRequired(exponent);
     const effectiveBits = isSigned ? unsignedBits + 1 : unsignedBits;
@@ -170,7 +170,8 @@ export default function Home() {
           ? `${effectiveBits} bit${effectiveBits !== 1 ? "s" : ""}`
           : "64+ bits",
       fitsInLabel: fits,
-      valueLabel: exponent <= 6 ? formatBigInt(nVal) : `10^${exponent}`,
+      valueLabel: formatBigInt(nVal),
+      isCompactValue: exponent > 6,
     };
   }, [exponent, isSigned]);
 
@@ -210,10 +211,16 @@ export default function Home() {
             Value
           </p>
           <p
-            key={valueLabel}
+            key={isCompactValue ? `${isSigned ? "signed" : "unsigned"}-${exponent}` : valueLabel}
             className="animate-digit-in mt-1 font-mono text-xl text-violet-100/90 sm:text-2xl"
           >
-            {valueLabel}
+            {isCompactValue ? (
+              <>
+                {isSigned ? "±" : ""}10<sup>{exponent}</sup>
+              </>
+            ) : (
+              valueLabel
+            )}
           </p>
         </div>
 
@@ -298,7 +305,7 @@ export default function Home() {
           <StatCard
             label="Fits In"
             value={fitsInLabel}
-            sub={bits <= 64 ? (isSigned ? "signed integer type" : "unsigned integer type") : "use bigint"}
+            sub={bits <= 64 ? (isSigned ? "signed integer type" : "unsigned integer type") : "requires arbitrary-precision integer"}
           />
         </div>
 
@@ -307,10 +314,17 @@ export default function Home() {
           <div className="flex items-center justify-between text-xs">
             <span className="text-violet-200/40">Formula</span>
             <span className="font-mono text-violet-200/70">
-              ⌈ log<sub>2</sub>( 10<sup>{exponent}</sup> + 1 ) ⌉ ={" "}
-              <span className="font-semibold text-violet-300">
-                {baseBits}
-              </span>
+              {isSigned ? (
+                <>
+                  ⌈ log<sub>2</sub>( 10<sup>{exponent}</sup> + 1 ) ⌉ + 1 ={" "}
+                  <span className="font-semibold text-violet-300">{bits}</span>
+                </>
+              ) : (
+                <>
+                  ⌈ log<sub>2</sub>( 10<sup>{exponent}</sup> + 1 ) ⌉ ={" "}
+                  <span className="font-semibold text-violet-300">{baseBits}</span>
+                </>
+              )}
             </span>
           </div>
         </GlassPanel>
@@ -321,13 +335,17 @@ export default function Home() {
             <span>0</span>
             <span>64 bits</span>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full border border-white/[0.06] bg-white/[0.03]">
+          <div className={`h-2.5 w-full overflow-hidden rounded-full border bg-white/[0.03] ${bits > 64 ? "border-rose-300/35 animate-overflow-pulse" : "border-white/[0.06]"}`}>
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-300 ease-out"
+              className={`relative h-full rounded-full transition-all duration-300 ease-out ${bits > 64 ? "bg-gradient-to-r from-rose-500 via-orange-500 to-amber-400" : "bg-gradient-to-r from-violet-500 to-fuchsia-500"}`}
               style={{
                 width: `${Math.min((bits / 64) * 100, 100)}%`,
               }}
-            />
+            >
+              {bits > 64 && (
+                <span className="absolute inset-y-0 left-0 w-1/3 animate-warning-sweep bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              )}
+            </div>
           </div>
           <p className={`mt-1 text-center text-[0.6rem] text-fuchsia-400/60 transition-opacity duration-300 ${bits > 64 ? "opacity-100" : "opacity-0"}`}>
             {bits > 64 ? (
