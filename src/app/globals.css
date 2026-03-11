@@ -122,12 +122,53 @@ input[type="range"]:active::-moz-range-thumb {
   }
 }
 
+@keyframes burn-flicker {
+  0%,
+  100% {
+    filter: saturate(1) brightness(1);
+  }
+  25% {
+    filter: saturate(1.15) brightness(1.08);
+  }
+  50% {
+    filter: saturate(0.95) brightness(0.92);
+  }
+  75% {
+    filter: saturate(1.25) brightness(1.12);
+  }
+}
+
+@keyframes ember-drift {
+  from {
+    transform: translateX(-35%);
+    opacity: 0.22;
+  }
+  to {
+    transform: translateX(35%);
+    opacity: 0.42;
+  }
+}
+
 @keyframes warning-sweep {
   from {
     transform: translateX(-120%);
   }
   to {
     transform: translateX(220%);
+  }
+}
+
+@keyframes ember-rise {
+  0% {
+    transform: translate(-50%, 0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--ember-shift, 0px)), calc(-1 * var(--ember-rise, 42px))) scale(0.2);
+    opacity: 0;
   }
 }
 
@@ -138,3 +179,16 @@ input[type="range"]:active::-moz-range-thumb {
 .animate-warning-sweep {
   animation: warning-sweep 1s ease-in-out infinite;
 }
+
+.animate-burn-flicker {
+  animation: burn-flicker 0.55s linear infinite;
+}
+
+.animate-ember-drift {
+  animation: ember-drift 1.3s ease-in-out infinite alternate;
+}
+
+.animate-ember-rise {
+  animation: ember-rise 1.9s linear infinite;
+}
+

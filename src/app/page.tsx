@@ -30,6 +30,11 @@ function formatBigInt(n: bigint): string {
   return parts.join(",");
 }
 
+function seededNoise(seed: number): number {
+  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
+
 /* ───────── Components ───────── */
 
 function GlassPanel({
@@ -92,8 +97,12 @@ export default function Home() {
   const [exponent, setExponent] = useState(9);
   const [sliderValue, setSliderValue] = useState(9);
   const [isSigned, setIsSigned] = useState(true);
+  const [showOverflowParticles, setShowOverflowParticles] = useState(false);
+  const [overflowParticlesVisible, setOverflowParticlesVisible] = useState(false);
   const sliderRef = useRef<HTMLInputElement>(null);
   const snapFrameRef = useRef<number | null>(null);
+  const particleFadeFrameRef = useRef<number | null>(null);
+  const particleFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-focus slider for keyboard accessibility
   useEffect(() => {
@@ -104,6 +113,12 @@ export default function Home() {
     return () => {
       if (snapFrameRef.current !== null) {
         cancelAnimationFrame(snapFrameRef.current);
+      }
+      if (particleFadeFrameRef.current !== null) {
+        cancelAnimationFrame(particleFadeFrameRef.current);
+      }
+      if (particleFadeTimeoutRef.current !== null) {
+        clearTimeout(particleFadeTimeoutRef.current);
       }
     };
   }, []);
@@ -144,7 +159,9 @@ export default function Home() {
     const effectiveBits = isSigned ? unsignedBits + 1 : unsignedBits;
 
     const fits =
-      effectiveBits <= 8
+      effectiveBits === 1
+        ? "boolean"
+        : effectiveBits <= 8
         ? isSigned
           ? "int8"
           : "uint8"
@@ -165,10 +182,7 @@ export default function Home() {
     return {
       bits: effectiveBits,
       baseBits: unsignedBits,
-      bitsLabel:
-        effectiveBits <= 64
-          ? `${effectiveBits} bit${effectiveBits !== 1 ? "s" : ""}`
-          : "64+ bits",
+      bitsLabel: `${effectiveBits} bit${effectiveBits !== 1 ? "s" : ""}`,
       fitsInLabel: fits,
       valueLabel: formatBigInt(nVal),
       isCompactValue: exponent > 6,
@@ -176,6 +190,52 @@ export default function Home() {
   }, [exponent, isSigned]);
 
   const pct = (sliderValue / 20) * 100;
+  const overflowEmbers = useMemo(
+    () =>
+      Array.from({ length: 90 }, (_, index) => {
+        const seed = index + 1;
+        const duration = 1.1 + seededNoise(seed + 37) * 0.95;
+
+        return {
+          left: `${(2 + seededNoise(seed) * 96).toFixed(2)}%`,
+          size: seededNoise(seed + 11) > 0.62 ? "h-1.5 w-1.5" : "h-1 w-1",
+          delay: `-${(seededNoise(seed + 23) * duration).toFixed(2)}s`,
+          duration: `${duration.toFixed(2)}s`,
+          shift: `${((seededNoise(seed + 51) - 0.5) * 24).toFixed(1)}px`,
+          rise: `${(30 + seededNoise(seed + 67) * 24).toFixed(1)}px`,
+          glow: seededNoise(seed + 83) > 0.5 ? "shadow-[0_0_10px_rgba(255,180,120,0.8)]" : "shadow-[0_0_8px_rgba(255,130,80,0.65)]",
+        };
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    if (particleFadeFrameRef.current !== null) {
+      cancelAnimationFrame(particleFadeFrameRef.current);
+      particleFadeFrameRef.current = null;
+    }
+    if (particleFadeTimeoutRef.current !== null) {
+      clearTimeout(particleFadeTimeoutRef.current);
+      particleFadeTimeoutRef.current = null;
+    }
+
+    if (bits > 64) {
+      setShowOverflowParticles(true);
+      particleFadeFrameRef.current = requestAnimationFrame(() => {
+        setOverflowParticlesVisible(true);
+        particleFadeFrameRef.current = null;
+      });
+      return;
+    }
+
+    setOverflowParticlesVisible(false);
+    if (showOverflowParticles) {
+      particleFadeTimeoutRef.current = setTimeout(() => {
+        setShowOverflowParticles(false);
+        particleFadeTimeoutRef.current = null;
+      }, 220);
+    }
+  }, [bits, showOverflowParticles]);
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#050510]">
@@ -301,11 +361,11 @@ export default function Home() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Bits Needed" value={bitsLabel} accent />
+          <StatCard label={bits === 1 ? "Bit Needed" : "Bits Needed"} value={bitsLabel} accent />
           <StatCard
             label="Fits In"
             value={fitsInLabel}
-            sub={bits <= 64 ? (isSigned ? "signed integer type" : "unsigned integer type") : "requires arbitrary-precision integer"}
+            sub={bits === 1 ? "logical value" : bits <= 64 ? (isSigned ? "signed integer type" : "unsigned integer type") : "requires arbitrary-precision integer"}
           />
         </div>
 
@@ -330,20 +390,44 @@ export default function Home() {
         </GlassPanel>
 
         {/* Bit bar visualization */}
-        <div className="mt-4">
+        <div className="relative mt-4">
           <div className="mb-1 flex justify-between text-[0.6rem] text-violet-300/30">
             <span>0</span>
             <span>64 bits</span>
           </div>
+          {showOverflowParticles && (
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-[calc(100%-1.15rem)] h-10 overflow-visible transition-opacity duration-200 ${
+                overflowParticlesVisible ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {overflowEmbers.map((ember) => (
+                <span
+                  key={`${ember.left}-${ember.delay}-${ember.duration}`}
+                  className={`absolute bottom-0 ${ember.size} ${ember.glow} animate-ember-rise rounded-full bg-orange-200`}
+                  style={{
+                    left: ember.left,
+                    animationDelay: ember.delay,
+                    animationDuration: ember.duration,
+                    ["--ember-shift" as string]: ember.shift,
+                    ["--ember-rise" as string]: ember.rise,
+                  }}
+                />
+              ))}
+            </div>
+          )}
           <div className={`h-2.5 w-full overflow-hidden rounded-full border bg-white/[0.03] ${bits > 64 ? "border-rose-300/35 animate-overflow-pulse" : "border-white/[0.06]"}`}>
             <div
-              className={`relative h-full rounded-full transition-all duration-300 ease-out ${bits > 64 ? "bg-gradient-to-r from-rose-500 via-orange-500 to-amber-400" : "bg-gradient-to-r from-violet-500 to-fuchsia-500"}`}
+              className={`relative h-full rounded-full transition-all duration-300 ease-out ${bits > 64 ? "animate-burn-flicker bg-gradient-to-r from-red-600 via-orange-500 to-amber-300" : "bg-gradient-to-r from-violet-500 to-fuchsia-500"}`}
               style={{
                 width: `${Math.min((bits / 64) * 100, 100)}%`,
               }}
             >
               {bits > 64 && (
-                <span className="absolute inset-y-0 left-0 w-1/3 animate-warning-sweep bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                <>
+                  <span className="absolute inset-y-0 left-0 w-1/3 animate-warning-sweep bg-gradient-to-r from-transparent via-yellow-100/55 to-transparent" />
+                  <span className="absolute inset-0 animate-ember-drift bg-[radial-gradient(circle_at_20%_50%,rgba(255,220,160,0.35),transparent_28%),radial-gradient(circle_at_65%_40%,rgba(255,140,80,0.4),transparent_24%),radial-gradient(circle_at_85%_60%,rgba(255,80,40,0.35),transparent_22%)]" />
+                </>
               )}
             </div>
           </div>
